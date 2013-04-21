@@ -1,0 +1,15 @@
+{
+  "author": "Jakob Borg <jakob@nym.se> (http://nym.se/)",
+  "name": "edspoller",
+  "bin": {
+    "edspoller": "./edspoller.js"
+  },
+  "description": "Fetch environmental data from an EDS 1-Wire device and inject it into Mongodb",
+  "version": "1.0.0",
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "mongodb": "~1.2.14"
+  }
+}
