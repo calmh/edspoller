@@ -15,7 +15,7 @@
     "saveInterval": 300000,
 
     "mongodb": {
-       "host": "127.0.0.1",
+       "host": "zedspoller.int.nym.se",
        "port": 27017,
        "db": "edsenv",
        "collection": "raw"

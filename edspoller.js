@@ -14,8 +14,9 @@ var stateDirty = false;
 function nextInterval(ms, off) {
     off = off || 0;
     var now = Date.now();
-    var next = Math.ceil(now / ms) * ms + off;
-    var wait = next - now;
+    var next = Math.floor((now + 1.5 * ms) / ms) * ms;
+    var wait = next - now + off;
+    console.log(now, next, wait);
     return wait;
 }
 
@@ -82,27 +83,19 @@ function pollerLoop() {
             }
         });
 
-        setTimeout(pollerLoop, nextInterval(config.pollInterval, -500));
+        setTimeout(pollerLoop, nextInterval(config.pollInterval, 0));
     });
 }
 
-var dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-var srv = new mongo.Server(config.mongodb.host, config.mongodb.port, {});
+var srv = new mongo.Server(config.mongodb.host, config.mongodb.port, {auto_reconnect: true});
 var db = new mongo.Db(config.mongodb.db, srv, {w: -1});
 
 function dataSaveLoop() {
     var stamp = new Date();
     stamp.setMilliseconds(0);
     var s = Math.floor(stamp.getTime() / 1000);
-    var t = {};
-    t.ts = stamp;
-    t.y = stamp.getUTCFullYear();
-    t.m = stamp.getUTCMonth() + 1;
-    t.dow = dow[stamp.getUTCDay()];
-    t.d = stamp.getUTCDate();
-    t.h = stamp.getUTCHours();
 
-    var result = { _id: s, t: t, d: {} }
+    var result = { _id: s, t: stamp, d: {} }
     var count = 0;
     config.extractions.forEach(function (ex) {
         if (collected[ex.name].length > 0) {
@@ -122,12 +115,12 @@ function dataSaveLoop() {
                 throw err;
             var coll = new mongo.Collection(client, config.mongodb.collection);
             coll.insert(result);
-            console.log(result);
+            console.log(JSON.stringify(result));
             client.close();
         });
     }
 
-    setTimeout(dataSaveLoop, nextInterval(config.saveInterval));
+    setTimeout(dataSaveLoop, nextInterval(config.saveInterval, 500));
 }
 
 pollerLoop();

@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-__author__ = 'jb'
-
 import datetime
 import pymongo
 import json
@@ -26,13 +24,7 @@ for doc in co.find().sort('t'):
         t = datetime.datetime.fromtimestamp(prev_id)
         new = {
             '_id': prev_id,
-            't': {
-                'ts': { '$date': prev_id * 1000 },
-                'y': t.year,
-                'm': t.month,
-                'h': t.hour,
-                'dow': dow[t.weekday()]
-            },
+            't': { '$date': prev_id * 1000 },
             'd': {
             }
         }
