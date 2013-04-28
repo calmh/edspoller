@@ -7,15 +7,26 @@ var config = JSON.parse(fs.readFileSync(process.argv[2], 'utf-8'));
 var srv = new mongo.Server(config.mongodb.host, config.mongodb.port, {auto_reconnect: true});
 var db = new mongo.Db(config.mongodb.db, srv, {w: -1});
 
+function allowCrossDomain(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,X-Requested-With');
+    if (req.method == 'OPTIONS') {
+        res.send(200);
+    }
+    else {
+        next();
+    }
+}
+
 function setupApp(err, client) {
     if (err)
         throw err;
 
     var app = express();
+    app.use(allowCrossDomain);
 
     app.get('/monthly', function (req, res) {
-        if (err)
-            throw err;
         var coll = new mongo.Collection(client, config.mongodb.collection);
 
         var group = {$group: {_id: {year: {$year: '$t'}, month: {$month: '$t'}},
@@ -37,8 +48,6 @@ function setupApp(err, client) {
     });
 
     app.get('/daily/:days', function (req, res) {
-        if (err)
-            throw err;
         var coll = new mongo.Collection(client, config.mongodb.collection);
 
         var cut = Math.floor(Date.now() / 1000) - 86400 * parseInt(req.params.days, 10);
@@ -63,8 +72,6 @@ function setupApp(err, client) {
 
 
     app.get('/hourly/:days', function (req, res) {
-        if (err)
-            throw err;
         var coll = new mongo.Collection(client, config.mongodb.collection);
 
         var cut = Math.floor(Date.now() / 1000) - 86400 * parseInt(req.params.days, 10);
@@ -88,8 +95,6 @@ function setupApp(err, client) {
     });
 
     app.get('/latest/:seconds', function (req, res) {
-        if (err)
-            throw err;
         var coll = new mongo.Collection(client, config.mongodb.collection);
 
         var cut = Math.floor(Date.now() / 1000) - parseInt(req.params.seconds, 10);

@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<script language="javascript">
+function EDSController($scope, $http) {
+    function updateLatest() {
+        $http.get('http://zedspoller.int.nym.se:8042/latest/600').success(function (data) {
+            $scope.latest = data[data.length - 1];
+            $scope.currentWattage = $scope.latest.d.Wh * 3600 / 300;
+            $scope.currentTime = Date.parse($scope.latest.t);
+            setTimeout(updateLatest, 30000);
+        });
+    }
+    updateLatest();
+}
+</script>
+<style type="text/css">
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: 200;
+}
+.time, .temperature, .power {
+    font-weight: 400;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.axis text {
+    font-size: 8pt;
+}
+
+/*.x.axis path {
+display: none;
+}*/
+
+.line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+</style>
+</head>
+<body>
+<div ng-app ng-controller="EDSController">
+    <div id="latest">
+        Data from <span class="time">{{ currentTime | date:'HH:mm' }}</span><br />
+        Outside temperature: <span class="temperature">{{ latest.d.outC | number:1 }} &deg;C</span><br />
+        Power consumption: <span class="power">{{ currentWattage }} W</span><br />
+    </div>
+</div>
+<svg id="tempShort" width=400 height=150></svg>
+<svg id="tempLong" width=400 height=150></svg>
+<svg id="powerShort" width=400 height=150></svg>
+<svg id="powerLong" width=400 height=150></svg>
+<svg id="tempProfile" width=400 height=150></svg>
+<svg id="tempProfileLong" width=400 height=150></svg>
+</body>
+<script language="javascript">
+function drawIn(selector, data, isTime) {
+    var margin = {top: 10, right: 20, bottom: 30, left: 40};
+
+    var svg = d3.select(selector);
+    var width = svg.attr('width') - margin.left - margin.right;
+    var height = svg.attr('height') - margin.top - margin.bottom;
+    var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    if (isTime) {
+        var x = d3.time.scale().range([0, width]);
+    } else {
+        var x = d3.scale.linear().range([0, width]);
+    }
+    var y = d3.scale.linear().range([height, 0]);
+    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var line = d3.svg.line()
+    .x(function(d) { return x(d[0]); })
+    .y(function(d) { return y(d[1]); });
+
+    x.domain(d3.extent(data, function(d) { return d[0]; }));
+    y.domain(d3.extent(data, function(d) { return d[1]; })).nice();
+
+    g.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+    g.append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
+
+    g.append("path")
+    .datum(data)
+    .attr("class", "line")
+    .attr("d", line);
+}
+
+d3.json("http://zedspoller.int.nym.se:8042/latest/14400", function(error, data) {
+    var ms = data.map(function (d) {
+        return [
+            Date.parse(d.t),
+            d.d.outC
+        ];
+    });
+    drawIn('#tempShort', ms, true);
+
+    var ps = data.map(function (d) {
+        return [
+            Date.parse(d.t),
+            d.d.Wh * 3600 / 300
+        ];
+    });
+    drawIn('#powerShort', ps, true);
+});
+
+d3.json("http://zedspoller.int.nym.se:8042/latest/172800", function(error, data) {
+    var ms = data.map(function (d) {
+        return [
+            Date.parse(d.t),
+            d.d.outC
+        ];
+    });
+    drawIn('#tempLong', ms, true);
+
+    var ps = data.map(function (d) {
+        return [
+            Date.parse(d.t),
+            d.d.Wh * 3600 / 300
+        ];
+    });
+    drawIn('#powerLong', ps, true);
+});
+
+d3.json("http://zedspoller.int.nym.se:8042/hourly/14", function(error, data) {
+    var ms = data.map(function (d) {
+        return [
+            (d._id.hour + 2) % 24,
+            d.avgT
+        ];
+    });
+    ms.sort(function (a, b) { return a[0] - b[0]; });
+    drawIn('#tempProfile', ms);
+});
+
+d3.json("http://zedspoller.int.nym.se:8042/monthly", function(error, data) {
+    var ms = data.map(function (d) {
+        return [
+            d._id.month,
+            d.avgT
+        ];
+    });
+    ms.sort(function (a, b) { return a[0] - b[0]; });
+    drawIn('#tempProfileLong', ms);
+});
+
+</script>
+</html>
+
