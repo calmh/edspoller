@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+<div ng-app ng-controller="EDSController">
+    <div id="latest">
+        Data from <span class="time">{{ currentTime | date:'HH:mm' }}</span><br/>
+        Outside temperature: <span class="temperature">{{ latest.d.outC | number:1 }} &deg;C</span><br/>
+        Power consumption: <span class="power">{{ currentWattage }} W</span><br/>
+    </div>
+</div>
+<svg id="tempShort" width=400 height=150></svg>
+<svg id="tempLong" width=400 height=150></svg>
+<svg id="powerShort" width=400 height=150></svg>
+<svg id="powerLong" width=400 height=150></svg>
+<svg id="tempProfile" width=400 height=150></svg>
+<svg id="tempProfileLong" width=400 height=150></svg>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="app.js"></script>
+</html>
+
