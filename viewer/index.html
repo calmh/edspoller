@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
 <head>
-    <link rel="stylesheet" type="text/css" href="style.css"/>
+    <link rel="stylesheet/less" type="text/css" href="style.less"/>
+    <script type="text/javascript" src="vendor/less.min.js"></script>
+    <script type="text/javascript" src="vendor/angular.min.js"></script>
+    <script type="text/javascript" src="vendor/d3.v3.min.js"></script>
 </head>
 <body>
 <div ng-app ng-controller="EDSController">
@@ -11,15 +14,19 @@
         Power consumption: <span class="power">{{ currentWattage }} W</span><br/>
     </div>
 </div>
-<svg id="tempShort" width=400 height=150></svg>
-<svg id="tempLong" width=400 height=150></svg>
-<svg id="powerShort" width=400 height=150></svg>
-<svg id="powerLong" width=400 height=150></svg>
-<svg id="tempProfile" width=400 height=150></svg>
-<svg id="tempProfileLong" width=400 height=150></svg>
+<div class="group">
+<svg class="graph" id="tempShort"></svg>
+<svg class="graph" id="tempLong"></svg>
+    </div>
+<div class="group">
+<svg class="graph" id="powerShort"></svg>
+<svg class="graph" id="powerLong"></svg>
+    </div>
+<div class="group">
+<svg class="graph" id="tempProfile"></svg>
+<svg class="graph" id="tempProfileLong"></svg>
+    </div>
 </body>
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.0.6/angular.min.js"></script>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script src="app.js"></script>
+<script type="text/javascript" src="app.js"></script>
 </html>
 

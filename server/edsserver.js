@@ -25,6 +25,7 @@ function setupApp(err, client) {
 
     var app = express();
     app.use(allowCrossDomain);
+    app.use(express.static(__dirname + '/../viewer'));
 
     app.get('/monthly', function (req, res) {
         var coll = new mongo.Collection(client, config.mongodb.collection);
