@@ -1,0 +1,28 @@
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+
+svg.graph {
+  height: 150px;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  font-size: 8pt;
+}
+
+.line {
+  fill: none;
+  stroke-width: 1.5px;
+  stroke: #444;
+}
+
+.bar {
+  fill: #444;
+}

@@ -1,61 +1,92 @@
 'use strict';
 
-//var API = 'http://zedspoller.nym.se:8042';
-//var API = 'http://ext.nym.se:8042';
-var API = '';
+var APIS = [
+    'http://zedspoller.nym.se:8042', // IPv66
+    'http://ext.nym.se:8042', // External IPv4
+    'http://zedspoller.int.nym.se:8042', // Internal IPv4
+];
 
-function EDSController($scope, $http) {
-    function updateLatest() {
-        $http.get(API + '/raw/600').success(function (data) {
-            $scope.latest = data[data.length - 1];
-            $scope.currentWattage = $scope.latest.d.Wh * 3600 / 300;
-            $scope.currentTime = Date.parse($scope.latest.t);
-            $scope.currentHour = (new Date($scope.currentTime)).getUTCHours();
-            $scope.currentTemp = $scope.latest.d.outC;
-
-            $scope.$watch('tempProfile + currentHour + currentTemp', function () {
-                if ('tempProfile' in $scope) {
-                    $scope.currentDiff = $scope.currentTemp - $scope.tempProfile[$scope.currentHour]
-                    $scope.currentTrend = 0;
-                    if ($scope.currentDiff > 1) {
-                        $scope.currentTrend = 1;
-                    } else if ($scope.currentDiff < -1) {
-                        $scope.currentTrend = -1;
+var foundApi = null;
+var trying = false;
+var cbs = [];
+function getApi(cb) {
+    if (foundApi !== null)
+        return cb(foundApi);
+    cbs.push(cb);
+    if (!trying) {
+        trying = true;
+        APIS.forEach(function (candidate) {
+            try {
+                d3.json(candidate + '/raw/0', function (err, data) {
+                    if (!err && !foundApi) {
+                        foundApi = candidate;
+                        cbs.forEach(function (cb) {
+                            cb(foundApi);
+                        })
+                        cbs = null;
                     }
-                }
-            });
-
-            setTimeout(updateLatest, 30 * 1000);
+                });
+            } catch (e) {
+                // Nothing
+            }
         });
     }
-
-    function updateDaily() {
-        $http.get(API + '/aggregated/daily/2').success(function (data) {
-            var throughDay = ((Date.now() / 1000) % 86400) / 86400;
-            $scope.today = data[data.length - 1];
-            $scope.today.estimatedWh = $scope.today.totWh / throughDay;
-            $scope.yesterday = data[data.length - 2];
-            setTimeout(updateDaily, 300 * 1000);
-        });
-    }
-
-    function updateProfile() {
-        $http.get(API + '/grouped/hourly/14').success(function (data) {
-            $scope.tempProfile = []
-            data.forEach(function (d) {
-                $scope.tempProfile[d._id.hour] = d.avgT;
-            });
-        });
-
-        setTimeout(updateLatest, 3600 * 1000);
-    }
-
-    updateProfile();
-    updateLatest();
-    updateDaily();
 }
 
-function drawIn(selector, data, options) {
+function EDSController($scope, $http) {
+    getApi(function (API) {
+        function updateLatest() {
+            $http.get(API + '/raw/600').success(function (data) {
+                $scope.latest = data[data.length - 1];
+                $scope.currentWattage = $scope.latest.d.Wh * 3600 / 300;
+                $scope.currentTime = Date.parse($scope.latest.t);
+                $scope.currentHour = (new Date($scope.currentTime)).getUTCHours();
+                $scope.currentTemp = $scope.latest.d.outC;
+
+                $scope.$watch('tempProfile + currentHour + currentTemp', function () {
+                    if ('tempProfile' in $scope) {
+                        $scope.currentDiff = $scope.currentTemp - $scope.tempProfile[$scope.currentHour]
+                        $scope.currentTrend = 0;
+                        if ($scope.currentDiff > 1) {
+                            $scope.currentTrend = 1;
+                        } else if ($scope.currentDiff < -1) {
+                            $scope.currentTrend = -1;
+                        }
+                    }
+                });
+
+                setTimeout(updateLatest, 30 * 1000);
+            });
+        }
+
+        function updateDaily() {
+            $http.get(API + '/aggregated/daily/2').success(function (data) {
+                var throughDay = ((Date.now() / 1000) % 86400) / 86400;
+                $scope.today = data[data.length - 1];
+                $scope.today.estimatedWh = $scope.today.totWh / throughDay;
+                $scope.yesterday = data[data.length - 2];
+                setTimeout(updateDaily, 300 * 1000);
+            });
+        }
+
+        function updateProfile() {
+            $http.get(API + '/grouped/hourly/14').success(function (data) {
+                $scope.tempProfile = []
+                data.forEach(function (d) {
+                    $scope.tempProfile[d._id.hour] = d.avgT;
+                });
+            });
+
+            setTimeout(updateLatest, 3600 * 1000);
+        }
+
+        updateProfile();
+        updateLatest();
+        updateDaily();
+    });
+}
+
+function drawLinesIn(selector, data, options) {
     options = options || {};
 
     var margin = {top: 10, right: 20, bottom: 30, left: 40};
@@ -200,109 +231,126 @@ function drawBarsIn(selector, data, options) {
 
 }
 
-function update3Hours() {
-    d3.json(API + '/raw/14400', function (error, data) {
-        var ms = data.map(function (d) {
-            return [
-                Date.parse(d.t),
-                d.d.outC
-            ];
+getApi(function (API) {
+    function update3Hours() {
+        d3.json(API + '/raw/14400', function (error, data) {
+            if (error)
+                return;
+
+            var ms = data.map(function (d) {
+                return [
+                    Date.parse(d.t),
+                    d.d.outC
+                ];
+            });
+            drawLinesIn('#tempShort', ms, {isTime: true, lineClass: 'temperature', yUnit: '°C'});
+
+            var ps = data.map(function (d) {
+                return [
+                    Date.parse(d.t),
+                    d.d.Wh * 3600 / 300
+                ];
+            });
+            drawLinesIn('#powerShort', ps, {isTime: true, min: 0, lineClass: 'power', yUnit: 'W'});
         });
-        drawIn('#tempShort', ms, {isTime: true, lineClass: 'temperature', yUnit: '°C'});
 
-        var ps = data.map(function (d) {
-            return [
-                Date.parse(d.t),
-                d.d.Wh * 3600 / 300
-            ];
+        setTimeout(update3Hours, 30 * 1000);
+    }
+
+    function update48Hours() {
+        d3.json(API + '/raw/172800', function (error, data) {
+            if (error)
+                return;
+
+            var ms = data.map(function (d) {
+                return [
+                    Date.parse(d.t),
+                    d.d.outC
+                ];
+            });
+            drawLinesIn('#tempLong', ms, {isTime: true, lineClass: 'temperature', yUnit: '°C'});
+
+            var ps = data.map(function (d) {
+                return [
+                    Date.parse(d.t),
+                    d.d.Wh * 3600 / 300
+                ];
+            });
+            drawLinesIn('#powerLong', ps, {isTime: true, min: 0, lineClass: 'power', yUnit: 'W'});
         });
-        drawIn('#powerShort', ps, {isTime: true, min: 0, lineClass: 'power', yUnit: 'W'});
-    });
 
-    setTimeout(update3Hours, 30 * 1000);
-}
+        setTimeout(update48Hours, 300 * 1000);
+    }
 
-function update48Hours() {
-    d3.json(API + '/raw/172800', function (error, data) {
-        var ms = data.map(function (d) {
-            return [
-                Date.parse(d.t),
-                d.d.outC
-            ];
+    function updateProfiles() {
+        d3.json(API + '/grouped/hourly/14', function (error, data) {
+            if (error)
+                return;
+
+            var ms = data.map(function (d) {
+                return [
+                    (d._id.hour + 2) % 24,
+                    d.avgT
+                ];
+            });
+            ms.sort(function (a, b) {
+                return a[0] - b[0];
+            });
+            drawLinesIn('#tempProfile', ms, {yUnit: '°C'});
         });
-        drawIn('#tempLong', ms, {isTime: true, lineClass: 'temperature', yUnit: '°C'});
 
-        var ps = data.map(function (d) {
-            return [
-                Date.parse(d.t),
-                d.d.Wh * 3600 / 300
-            ];
+        d3.json(API + '/aggregated/monthly', function (error, data) {
+            if (error)
+                return;
+
+            var ms = data.map(function (d) {
+                return [
+                    d._id.month,
+                    d.minT !== null ? d.minT : 0,
+                    d.maxT !== null ? d.maxT : 0,
+                ];
+            });
+            ms = ms.slice(-12);
+            ms.sort(function (a, b) {
+                return a[0] - b[0];
+            });
+            ms = ms.filter(function (r) {
+                return r[1] !== null;
+            });
+            drawBarsIn('#tempProfileLong', ms, {yUnit: '°C'});
         });
-        drawIn('#powerLong', ps, {isTime: true, min: 0, lineClass: 'power', yUnit: 'W'});
-    });
 
-    setTimeout(update48Hours, 300 * 1000);
-}
+        setTimeout(update48Hours, 3600 * 1000);
+    }
 
-function updateProfiles() {
-    d3.json(API + '/grouped/hourly/14', function (error, data) {
-        var ms = data.map(function (d) {
-            return [
-                (d._id.hour + 2) % 24,
-                d.avgT
-            ];
+    function updateDays() {
+        d3.json(API + '/aggregated/daily/20', function (error, data) {
+            if (error)
+                return;
+
+            var ms = data.map(function (d) {
+                return [
+                    d._id.day,
+                    0,
+                    d.totWh
+                ];
+            });
+            drawBarsIn('#powerDays', ms, {yUnit: 'Wh'});
+
+            var ts = data.map(function (d) {
+                return [
+                    d._id.day,
+                    d.minT,
+                    d.maxT
+                ];
+            });
+            drawBarsIn('#tempDays', ts, {yUnit: '°C'});
         });
-        ms.sort(function (a, b) {
-            return a[0] - b[0];
-        });
-        drawIn('#tempProfile', ms, {yUnit: '°C'});
-    });
 
-    d3.json(API + '/aggregated/monthly', function (error, data) {
-        var ms = data.map(function (d) {
-            return [
-                d._id.month,
-                d.minT !== null ? d.minT : 0,
-                d.maxT !== null ? d.maxT : 0,
-            ];
-        });
-        ms = ms.slice(-12);
-        ms.sort(function (a, b) {
-            return a[0] - b[0];
-        });
-        ms = ms.filter(function (r) {
-            return r[1] !== null;
-        });
-        drawBarsIn('#tempProfileLong', ms, {yUnit: '°C'});
-    });
+    }
 
-    setTimeout(update48Hours, 3600 * 1000);
-}
-
-function updateDays() {
-    d3.json(API + '/aggregated/daily/20', function (error, data) {
-        var ms = data.map(function (d) {
-            return [
-                d._id.day,
-                0,
-                d.totWh
-            ];
-        });
-        drawBarsIn('#powerDays', ms, {yUnit: 'Wh'});
-
-        var ts = data.map(function (d) {
-            return [
-                d._id.day,
-                d.minT,
-                d.maxT
-            ];
-        });
-        drawBarsIn('#tempDays', ts, {yUnit: '°C'});
-    });
-
-}
-
-update3Hours();
-updateProfiles();
-update48Hours();
-updateDays();
+    update3Hours();
+    updateProfiles();
+    update48Hours();
+    updateDays();
+});

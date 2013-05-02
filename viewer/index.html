@@ -4,38 +4,12 @@
     <meta charset="utf-8">
     <title>Environmental</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
-    <style type="text/css">
-        body {
-            padding-top: 60px;
-            padding-bottom: 40px;
-        }
-
-        svg.graph {
-            height: 150px;
-        }
-
-        .axis path, .axis line {
-            fill: none;
-            stroke: #000;
-            shape-rendering: crispEdges;
-        }
-
-        .axis text {
-            font-size: 8pt;
-        }
-
-        .line {
-            fill: none;
-            stroke-width: 1.5px;
-            stroke: #444;
-        }
-
-        .bar {
-            fill: #444;
-        }
-    </style>
-    <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap-responsive.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="vendor/angular.min.js"></script>
+    <script type="text/javascript" src="vendor/d3.v3.min.js"></script>
+    <script type="text/javascript" src="app.js"></script>
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
     <script src="bootstrap/js/html5shiv.js"></script>
@@ -49,9 +23,9 @@
 
             <div class="alert alert-info">
                 Current outside temperature: <span
-                    class="temperature">{{ currentTemp | number:1 }}&nbsp;&deg;C</span><br />
-                Todays max: {{ today.maxT | number:1 }}&nbsp;&deg;C, min: {{ today.minT | number:1 }}&nbsp;&deg;C<br />
-                Yesterdays max: {{ yesterday.maxT | number:1 }}&nbsp;&deg;C, min: {{ yesterday.minT | number:1 }}&nbsp;&deg;C<br />
+                    class="temperature">{{ currentTemp | number:1 }}&nbsp;&deg;C</span><br/>
+                Todays max: {{ today.maxT | number:1 }}&nbsp;&deg;C, min: {{ today.minT | number:1 }}&nbsp;&deg;C<br/>
+                Yesterdays max: {{ yesterday.maxT | number:1 }}&nbsp;&deg;C, min: {{ yesterday.minT | number:1 }}&nbsp;&deg;C<br/>
             </div>
             <h3 class="muted">Last 3 Hours</h3>
             <svg class="graph" id="tempShort"></svg>
@@ -65,8 +39,9 @@
 
             <div class="alert alert-info">
                 Current power consumption: <span class="power">{{ currentWattage }}&nbsp;W</span><br/>
-                Todays total: {{ today.totWh/1000 | number:1 }}&nbsp;kWh, estimated: {{ today.estimatedWh/1000 | number:1 }}&nbsp;kWh<br />
-                Yesterdays total: {{ yesterday.totWh/1000 | number:1 }}&nbsp;kWh<br />
+                Todays total: {{ today.totWh/1000 | number:1 }}&nbsp;kWh, estimated: {{ today.estimatedWh/1000 |
+                number:1 }}&nbsp;kWh<br/>
+                Yesterdays total: {{ yesterday.totWh/1000 | number:1 }}&nbsp;kWh<br/>
             </div>
             <h3 class="muted">Last 3 Hours</h3>
             <svg class="graph" id="powerShort"></svg>
@@ -100,8 +75,5 @@
         </p>
     </footer>
 </div>
-<script type="text/javascript" src="vendor/angular.min.js"></script>
-<script type="text/javascript" src="vendor/d3.v3.min.js"></script>
-<script type="text/javascript" src="app.js"></script>
 </body>
 </html>
