@@ -38,7 +38,7 @@ function EDSController($scope, $http) {
                 }
             });
 
-            setTimeout(updateLatest, 30000);
+            setTimeout(updateLatest, 30 * 000);
         });
     }
 
@@ -49,6 +49,8 @@ function EDSController($scope, $http) {
                 $scope.tempProfile[d._id.hour] = d.avgT;
             });
         });
+
+        setTimeout(updateLatest, 3600 * 000);
     }
 
     updateProfile();
@@ -129,7 +131,7 @@ function update3Hours() {
         drawIn('#powerShort', ps, {isTime: true, min: 0});
     });
 
-    setTimeout(update3Hours, 30000);
+    setTimeout(update3Hours, 30 * 1000);
 }
 
 function update48Hours() {
@@ -150,6 +152,8 @@ function update48Hours() {
         });
         drawIn('#powerLong', ps, {isTime: true, min: 0});
     });
+
+    setTimeout(update48Hours, 300 * 1000);
 }
 
 function updateProfiles() {
@@ -182,6 +186,8 @@ function updateProfiles() {
         });
         drawIn('#tempProfileLong', ms);
     });
+
+    setTimeout(update48Hours, 3600 * 1000);
 }
 
 update3Hours();
