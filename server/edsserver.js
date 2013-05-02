@@ -27,52 +27,7 @@ function setupApp(err, client) {
     app.use(allowCrossDomain);
     app.use(express.static(__dirname + '/../viewer'));
 
-    app.get('/monthly', function (req, res) {
-        var coll = new mongo.Collection(client, config.mongodb.collection);
-
-        var group = {$group: {_id: {year: {$year: '$t'}, month: {$month: '$t'}},
-            maxT: {$max: '$d.outC'},
-            avgT: {$avg: '$d.outC'},
-            minT: {$min: '$d.outC'},
-            avgWh: {$avg: '$d.Wh'},
-            maxWh: {$max: '$d.Wh'},
-            totWh: {$sum: '$d.Wh'}
-        }};
-        var sort = {$sort: {'_id.year': 1, '_id.month': 1}};
-
-        coll.aggregate(group, sort, function (err, docs) {
-            if (err)
-                throw err;
-            res.json(docs);
-            res.end();
-        });
-    });
-
-    app.get('/daily/:days', function (req, res) {
-        var coll = new mongo.Collection(client, config.mongodb.collection);
-
-        var cut = Math.floor(Date.now() / 1000) - 86400 * parseInt(req.params.days, 10);
-        var match = {$match: {_id: {$gt: cut}}};
-        var group = {$group: {_id: {year: {$year: '$t'}, month: {$month: '$t'}, day: {$dayOfMonth: '$t'}},
-            maxT: {$max: '$d.outC'},
-            avgT: {$avg: '$d.outC'},
-            minT: {$min: '$d.outC'},
-            avgWh: {$avg: '$d.Wh'},
-            maxWh: {$max: '$d.Wh'},
-            totWh: {$sum: '$d.Wh'}
-        }};
-        var sort = {$sort: {'_id.year': 1, '_id.month': 1, '_id.day': 1}};
-
-        coll.aggregate(match, group, sort, function (err, docs) {
-            if (err)
-                throw err;
-            res.json(docs);
-            res.end();
-        });
-    });
-
-
-    app.get('/hourly/:days', function (req, res) {
+    app.get('/grouped/hourly/:days', function (req, res) {
         var coll = new mongo.Collection(client, config.mongodb.collection);
 
         var cut = Math.floor(Date.now() / 1000) - 86400 * parseInt(req.params.days, 10);
@@ -95,7 +50,51 @@ function setupApp(err, client) {
         });
     });
 
-    app.get('/latest/:seconds', function (req, res) {
+    app.get('/aggregated/daily/:days', function (req, res) {
+        var coll = new mongo.Collection(client, config.mongodb.collection);
+
+        var cut = Math.floor(Date.now() / 1000) - 86400 * parseInt(req.params.days, 10);
+        var match = {$match: {_id: {$gt: cut}}};
+        var group = {$group: {_id: {year: {$year: '$t'}, month: {$month: '$t'}, day: {$dayOfMonth: '$t'}},
+            maxT: {$max: '$d.outC'},
+            avgT: {$avg: '$d.outC'},
+            minT: {$min: '$d.outC'},
+            avgWh: {$avg: '$d.Wh'},
+            maxWh: {$max: '$d.Wh'},
+            totWh: {$sum: '$d.Wh'}
+        }};
+        var sort = {$sort: {'_id.year': 1, '_id.month': 1, '_id.day': 1}};
+
+        coll.aggregate(match, group, sort, function (err, docs) {
+            if (err)
+                throw err;
+            res.json(docs);
+            res.end();
+        });
+    });
+
+    app.get('/aggregated/monthly', function (req, res) {
+        var coll = new mongo.Collection(client, config.mongodb.collection);
+
+        var group = {$group: {_id: {year: {$year: '$t'}, month: {$month: '$t'}},
+            maxT: {$max: '$d.outC'},
+            avgT: {$avg: '$d.outC'},
+            minT: {$min: '$d.outC'},
+            avgWh: {$avg: '$d.Wh'},
+            maxWh: {$max: '$d.Wh'},
+            totWh: {$sum: '$d.Wh'}
+        }};
+        var sort = {$sort: {'_id.year': 1, '_id.month': 1}};
+
+        coll.aggregate(group, sort, function (err, docs) {
+            if (err)
+                throw err;
+            res.json(docs);
+            res.end();
+        });
+    });
+
+    app.get('/raw/:seconds', function (req, res) {
         var coll = new mongo.Collection(client, config.mongodb.collection);
 
         var cut = Math.floor(Date.now() / 1000) - parseInt(req.params.seconds, 10);

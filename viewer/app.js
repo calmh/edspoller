@@ -1,18 +1,12 @@
 'use strict';
 
-var API = 'http://zedspoller.nym.se:8042';
+//var API = 'http://zedspoller.nym.se:8042';
 //var API = 'http://ext.nym.se:8042';
-
-var tempRanges = [
-    [30, 'Hot', 'alert-error'],
-    [25, 'Warm', ''],
-    [15, 'Cool', 'alert-success'],
-    [0, 'Freezing', 'alert-info'],
-]
+var API = '';
 
 function EDSController($scope, $http) {
     function updateLatest() {
-        $http.get(API + '/latest/600').success(function (data) {
+        $http.get(API + '/raw/600').success(function (data) {
             $scope.latest = data[data.length - 1];
             $scope.currentWattage = $scope.latest.d.Wh * 3600 / 300;
             $scope.currentTime = Date.parse($scope.latest.t);
@@ -31,19 +25,22 @@ function EDSController($scope, $http) {
                 }
             });
 
-            tempRanges.forEach(function (r) {
-                if ($scope.latest.d.outC < r[0]) {
-                    $scope.tempComment = r[1];
-                    $scope.tempClass = r[2];
-                }
-            });
-
             setTimeout(updateLatest, 30 * 1000);
         });
     }
 
+    function updateDaily() {
+        $http.get(API + '/aggregated/daily/2').success(function (data) {
+            var throughDay = ((Date.now() / 1000) % 86400) / 86400;
+            $scope.today = data[data.length - 1];
+            $scope.today.estimatedWh = $scope.today.totWh / throughDay;
+            $scope.yesterday = data[data.length - 2];
+            setTimeout(updateDaily, 300 * 1000);
+        });
+    }
+
     function updateProfile() {
-        $http.get(API + '/hourly/14').success(function (data) {
+        $http.get(API + '/grouped/hourly/14').success(function (data) {
             $scope.tempProfile = []
             data.forEach(function (d) {
                 $scope.tempProfile[d._id.hour] = d.avgT;
@@ -55,6 +52,7 @@ function EDSController($scope, $http) {
 
     updateProfile();
     updateLatest();
+    updateDaily();
 }
 
 function drawIn(selector, data, options) {
@@ -74,8 +72,15 @@ function drawIn(selector, data, options) {
         var x = d3.scale.linear().range([0, width]);
     }
     var y = d3.scale.linear().range([height, 0]);
-    var xAxis = d3.svg.axis().scale(x).orient('bottom');
-    var yAxis = d3.svg.axis().scale(y).orient('left');
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient('bottom');
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient('left')
+        .ticks(6)
+        .tickFormat(d3.format('.3s'));
+
     var line = d3.svg.line()
         .x(function (d) {
             return x(d[0]);
@@ -102,9 +107,18 @@ function drawIn(selector, data, options) {
         .attr('transform', 'translate(0,' + height + ')')
         .call(xAxis);
 
-    g.append('g')
+    var t = g.append('g')
         .attr('class', 'y axis')
         .call(yAxis);
+
+    if (options.yUnit) {
+        t.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text(options.yUnit);
+    }
 
     g.append('path')
         .datum(data)
@@ -112,15 +126,89 @@ function drawIn(selector, data, options) {
         .attr('d', line);
 }
 
+function drawBarsIn(selector, data, options) {
+    options = options || {};
+
+    var margin = {top: 10, right: 20, bottom: 30, left: 40};
+
+    var svg = d3.select(selector);
+    svg.text('');
+    var width = parseInt(svg.style('width'), 10) - margin.left - margin.right;
+    var height = parseInt(svg.style('height'), 10) - margin.top - margin.bottom;
+    var g = svg.append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+    var x = d3.scale.ordinal()
+        .rangeRoundBands([0, width], .1);
+
+    var y = d3.scale.linear()
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .tickFormat(d3.format('.2s'));
+
+
+    x.domain(data.map(function (d) {
+        return d[0];
+    }));
+    y.domain([
+        d3.min(data, function (d) {
+            return d[1];
+        }),
+        d3.max(data, function (d) {
+            return d[2];
+        })
+    ]).nice();
+
+    g.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    var t = g.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+
+    if (options.yUnit) {
+        t.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text(options.yUnit);
+    }
+
+    g.selectAll(".bar")
+        .data(data)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", function (d) {
+            return x(d[0]);
+        })
+        .attr("width", x.rangeBand())
+        .attr("y", function (d) {
+            return y(d[2]);
+        })
+        .attr("height", function (d) {
+            return y(d[1]) - y(d[2]);
+        });
+
+}
+
 function update3Hours() {
-    d3.json(API + '/latest/14400', function (error, data) {
+    d3.json(API + '/raw/14400', function (error, data) {
         var ms = data.map(function (d) {
             return [
                 Date.parse(d.t),
                 d.d.outC
             ];
         });
-        drawIn('#tempShort', ms, {isTime: true, lineClass: 'temperature'});
+        drawIn('#tempShort', ms, {isTime: true, lineClass: 'temperature', yUnit: '°C'});
 
         var ps = data.map(function (d) {
             return [
@@ -128,21 +216,21 @@ function update3Hours() {
                 d.d.Wh * 3600 / 300
             ];
         });
-        drawIn('#powerShort', ps, {isTime: true, min: 0, lineClass: 'power'});
+        drawIn('#powerShort', ps, {isTime: true, min: 0, lineClass: 'power', yUnit: 'W'});
     });
 
     setTimeout(update3Hours, 30 * 1000);
 }
 
 function update48Hours() {
-    d3.json(API + '/latest/172800', function (error, data) {
+    d3.json(API + '/raw/172800', function (error, data) {
         var ms = data.map(function (d) {
             return [
                 Date.parse(d.t),
                 d.d.outC
             ];
         });
-        drawIn('#tempLong', ms, {isTime: true, lineClass: 'temperature'});
+        drawIn('#tempLong', ms, {isTime: true, lineClass: 'temperature', yUnit: '°C'});
 
         var ps = data.map(function (d) {
             return [
@@ -150,14 +238,14 @@ function update48Hours() {
                 d.d.Wh * 3600 / 300
             ];
         });
-        drawIn('#powerLong', ps, {isTime: true, min: 0, lineClass: 'power'});
+        drawIn('#powerLong', ps, {isTime: true, min: 0, lineClass: 'power', yUnit: 'W'});
     });
 
     setTimeout(update48Hours, 300 * 1000);
 }
 
 function updateProfiles() {
-    d3.json(API + '/hourly/14', function (error, data) {
+    d3.json(API + '/grouped/hourly/14', function (error, data) {
         var ms = data.map(function (d) {
             return [
                 (d._id.hour + 2) % 24,
@@ -167,14 +255,15 @@ function updateProfiles() {
         ms.sort(function (a, b) {
             return a[0] - b[0];
         });
-        drawIn('#tempProfile', ms);
+        drawIn('#tempProfile', ms, {yUnit: '°C'});
     });
 
-    d3.json(API + '/monthly', function (error, data) {
+    d3.json(API + '/aggregated/monthly', function (error, data) {
         var ms = data.map(function (d) {
             return [
                 d._id.month,
-                d.avgT
+                d.minT !== null ? d.minT : 0,
+                d.maxT !== null ? d.maxT : 0,
             ];
         });
         ms = ms.slice(-12);
@@ -182,14 +271,38 @@ function updateProfiles() {
             return a[0] - b[0];
         });
         ms = ms.filter(function (r) {
-            return r[1] !== 0;
+            return r[1] !== null;
         });
-        drawIn('#tempProfileLong', ms);
+        drawBarsIn('#tempProfileLong', ms, {yUnit: '°C'});
     });
 
     setTimeout(update48Hours, 3600 * 1000);
 }
 
+function updateDays() {
+    d3.json(API + '/aggregated/daily/20', function (error, data) {
+        var ms = data.map(function (d) {
+            return [
+                d._id.day,
+                0,
+                d.totWh
+            ];
+        });
+        drawBarsIn('#powerDays', ms, {yUnit: 'Wh'});
+
+        var ts = data.map(function (d) {
+            return [
+                d._id.day,
+                d.minT,
+                d.maxT
+            ];
+        });
+        drawBarsIn('#tempDays', ts, {yUnit: '°C'});
+    });
+
+}
+
 update3Hours();
 updateProfiles();
 update48Hours();
+updateDays();
