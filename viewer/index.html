@@ -41,7 +41,7 @@ svg.graph {
         <div class="span4">
             <h2>Temperature</h2>
             <div class="alert {{ tempClass }}">
-                Current outside temperature: <span class="temperature">{{ currentTemp | number:1 }} &deg;C</span> ({{ tempComment }})
+                Current outside temperature: <span class="temperature">{{ currentTemp | number:1 }}&nbsp;&deg;C</span> ({{ tempComment }})
             </div>
             <h3 class="muted">Last 3 hours</h3>
             <svg class="graph" id="tempShort"></svg>
@@ -51,7 +51,7 @@ svg.graph {
         <div class="span4">
             <h2>Power Usage</h2>
             <div class="alert alert-info">
-                Current power consumption: <span class="power">{{ currentWattage }} W</span>
+                Current power consumption: <span class="power">{{ currentWattage }}&nbsp;W</span>
             </div>
             <h3 class="muted">Last 3 hours</h3>
             <svg class="graph" id="powerShort"></svg>
