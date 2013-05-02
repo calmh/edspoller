@@ -1,7 +1,14 @@
 'use strict';
 
-//var API = 'http://zedspoller.int.nym.se:8042';
-var API = 'http://ext.nym.se:8042';
+var API = 'http://zedspoller.nym.se:8042';
+//var API = 'http://ext.nym.se:8042';
+
+var tempRanges = [
+    [30, 'Hot', 'alert-error'],
+    [25, 'Warm', ''],
+    [15, 'Cool', 'alert-success'],
+    [0, 'Freezing', 'alert-info'],
+]
 
 function EDSController($scope, $http) {
     function updateLatest() {
@@ -9,10 +16,42 @@ function EDSController($scope, $http) {
             $scope.latest = data[data.length - 1];
             $scope.currentWattage = $scope.latest.d.Wh * 3600 / 300;
             $scope.currentTime = Date.parse($scope.latest.t);
+            $scope.currentHour = (new Date($scope.currentTime)).getUTCHours();
+            $scope.currentTemp = $scope.latest.d.outC;
+
+            $scope.$watch('tempProfile + currentHour + currentTemp', function () {
+                if ('tempProfile' in $scope) {
+                    $scope.currentDiff = $scope.currentTemp - $scope.tempProfile[$scope.currentHour]
+                    $scope.currentTrend = 0;
+                    if ($scope.currentDiff > 1) {
+                        $scope.currentTrend = 1;
+                    } else if ($scope.currentDiff < -1) {
+                        $scope.currentTrend = -1;
+                    }
+                }
+            });
+
+            tempRanges.forEach(function (r) {
+                if ($scope.latest.d.outC < r[0]) {
+                    $scope.tempComment = r[1];
+                    $scope.tempClass = r[2];
+                }
+            });
+
             setTimeout(updateLatest, 30000);
         });
     }
 
+    function updateProfile() {
+        $http.get(API + '/hourly/14').success(function (data) {
+            $scope.tempProfile = []
+            data.forEach(function (d) {
+                $scope.tempProfile[d._id.hour] = d.avgT;
+            });
+        });
+    }
+
+    updateProfile();
     updateLatest();
 }
 
@@ -35,12 +74,12 @@ function drawIn(selector, data, options) {
     var xAxis = d3.svg.axis().scale(x).orient('bottom');
     var yAxis = d3.svg.axis().scale(y).orient('left');
     var line = d3.svg.line()
-        .x(function (d) {
-            return x(d[0]);
-        })
-        .y(function (d) {
-            return y(d[1]);
-        });
+    .x(function (d) {
+        return x(d[0]);
+    })
+    .y(function (d) {
+        return y(d[1]);
+    });
 
     x.domain(d3.extent(data, function (d) {
         return d[0];
@@ -56,18 +95,18 @@ function drawIn(selector, data, options) {
     }
 
     g.append('g')
-        .attr('class', 'x axis')
-        .attr('transform', 'translate(0,' + height + ')')
-        .call(xAxis);
+    .attr('class', 'x axis')
+    .attr('transform', 'translate(0,' + height + ')')
+    .call(xAxis);
 
     g.append('g')
-        .attr('class', 'y axis')
-        .call(yAxis);
+    .attr('class', 'y axis')
+    .call(yAxis);
 
     g.append('path')
-        .datum(data)
-        .attr('class', 'line')
-        .attr('d', line);
+    .datum(data)
+    .attr('class', 'line')
+    .attr('d', line);
 }
 
 d3.json(API + '/latest/14400', function (error, data) {

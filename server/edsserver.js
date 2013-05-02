@@ -107,7 +107,7 @@ function setupApp(err, client) {
         });
     });
 
-    app.listen(8042);
+    app.listen(8042, '::');
 }
 
 db.open(setupApp);
