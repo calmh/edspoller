@@ -169,5 +169,8 @@ d3.json(API + '/monthly', function (error, data) {
     ms.sort(function (a, b) {
         return a[0] - b[0];
     });
+    ms = ms.filter(function (r) {
+        return r[1] !== 0;
+    });
     drawIn('#tempProfileLong', ms);
 });
