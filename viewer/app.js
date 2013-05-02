@@ -38,7 +38,7 @@ function EDSController($scope, $http) {
                 }
             });
 
-            setTimeout(updateLatest, 30 * 000);
+            setTimeout(updateLatest, 30 * 1000);
         });
     }
 
@@ -50,7 +50,7 @@ function EDSController($scope, $http) {
             });
         });
 
-        setTimeout(updateLatest, 3600 * 000);
+        setTimeout(updateLatest, 3600 * 1000);
     }
 
     updateProfile();
@@ -108,7 +108,7 @@ function drawIn(selector, data, options) {
 
     g.append('path')
         .datum(data)
-        .attr('class', 'line')
+        .attr('class', 'line ' + (options.lineClass || ''))
         .attr('d', line);
 }
 
@@ -120,7 +120,7 @@ function update3Hours() {
                 d.d.outC
             ];
         });
-        drawIn('#tempShort', ms, {isTime: true});
+        drawIn('#tempShort', ms, {isTime: true, lineClass: 'temperature'});
 
         var ps = data.map(function (d) {
             return [
@@ -128,7 +128,7 @@ function update3Hours() {
                 d.d.Wh * 3600 / 300
             ];
         });
-        drawIn('#powerShort', ps, {isTime: true, min: 0});
+        drawIn('#powerShort', ps, {isTime: true, min: 0, lineClass: 'power'});
     });
 
     setTimeout(update3Hours, 30 * 1000);
@@ -142,7 +142,7 @@ function update48Hours() {
                 d.d.outC
             ];
         });
-        drawIn('#tempLong', ms, {isTime: true});
+        drawIn('#tempLong', ms, {isTime: true, lineClass: 'temperature'});
 
         var ps = data.map(function (d) {
             return [
@@ -150,7 +150,7 @@ function update48Hours() {
                 d.d.Wh * 3600 / 300
             ];
         });
-        drawIn('#powerLong', ps, {isTime: true, min: 0});
+        drawIn('#powerLong', ps, {isTime: true, min: 0, lineClass: 'power'});
     });
 
     setTimeout(update48Hours, 300 * 1000);
