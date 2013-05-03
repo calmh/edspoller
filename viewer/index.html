@@ -27,12 +27,6 @@
                 Todays max: {{ today.maxT | number:1 }}&nbsp;&deg;C, min: {{ today.minT | number:1 }}&nbsp;&deg;C<br/>
                 Yesterdays max: {{ yesterday.maxT | number:1 }}&nbsp;&deg;C, min: {{ yesterday.minT | number:1 }}&nbsp;&deg;C<br/>
             </div>
-            <h3 class="muted">Last 3 Hours</h3>
-            <svg class="graph" id="tempShort"></svg>
-            <h3 class="muted">Last 48 Hours</h3>
-            <svg class="graph" id="tempLong"></svg>
-            <h3 class="muted">Last 20 Days Min-Max</h3>
-            <svg class="graph" id="tempDays"></svg>
         </div>
         <div class="span4">
             <h2>Power Usage</h2>
@@ -43,15 +37,9 @@
                 number:1 }}&nbsp;kWh<br/>
                 Yesterdays total: {{ yesterday.totWh/1000 | number:1 }}&nbsp;kWh<br/>
             </div>
-            <h3 class="muted">Last 3 Hours</h3>
-            <svg class="graph" id="powerShort"></svg>
-            <h3 class="muted">Last 48 Hours</h3>
-            <svg class="graph" id="powerLong"></svg>
-            <h3 class="muted">Last 20 Days Total</h3>
-            <svg class="graph" id="powerDays"></svg>
         </div>
         <div class="span4">
-            <h2>Temperature Profile</h2>
+            <h2>Trending</h2>
 
             <div class="alert alert-warning" ng-show="currentTrend == 1">
                 It's warmer than usual.
@@ -62,10 +50,32 @@
             <div class="alert alert-info" ng-show="currentTrend == -1">
                 It's colder than usual.
             </div>
-            <h3 class="muted">Hourly Average (14 days)</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div class="span4">
+            <h3 class="muted">Last 3 Hours</h3>
+            <svg class="graph" id="tempShort"></svg>
+            <h3 class="muted">Last 48 Hours</h3>
+            <svg class="graph" id="tempLong"></svg>
+            <h3 class="muted">Last 20 Days Min-Max</h3>
+            <svg class="graph" id="tempDays"></svg>
+        </div>
+        <div class="span4">
+            <h3 class="muted">Last 3 Hours</h3>
+            <svg class="graph" id="powerShort"></svg>
+            <h3 class="muted">Last 48 Hours</h3>
+            <svg class="graph" id="powerLong"></svg>
+            <h3 class="muted">Last 20 Days Total</h3>
+            <svg class="graph" id="powerDays"></svg>
+        </div>
+        <div class="span4">
+            <h3 class="muted">Hourly Average Temp (14 Days)</h3>
             <svg class="graph" id="tempProfile"></svg>
-            <h3 class="muted">Monthly Min-Max (1 year)</h3>
+            <h3 class="muted">Monthly Min-Max Temp</h3>
             <svg class="graph" id="tempProfileLong"></svg>
+            <h3 class="muted">Monthly Total Power</h3>
+            <svg class="graph" id="powerMonthly"></svg>
         </div>
     </div>
     <hr/>

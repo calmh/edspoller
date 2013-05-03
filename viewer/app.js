@@ -318,6 +318,19 @@ getApi(function (API) {
                 return r[1] !== null;
             });
             drawBarsIn('#tempProfileLong', ms, {yUnit: '°C'});
+
+            var ps = data.map(function (d) {
+                return [
+                    d._id.month,
+                    0,
+                    d.totWh / 1000
+                ];
+            });
+            ps = ps.slice(-12);
+            ps.sort(function (a, b) {
+                return a[0] - b[0];
+            });
+            drawBarsIn('#powerMonthly', ps, {yUnit: 'kWh'});
         });
 
         setTimeout(update48Hours, 3600 * 1000);
@@ -332,10 +345,10 @@ getApi(function (API) {
                 return [
                     d._id.day,
                     0,
-                    d.totWh
+                    d.totWh / 1000
                 ];
             });
-            drawBarsIn('#powerDays', ms, {yUnit: 'Wh'});
+            drawBarsIn('#powerDays', ms, {yUnit: 'kWh'});
 
             var ts = data.map(function (d) {
                 return [
